@@ -1,0 +1,45 @@
+name: Leads Pivots - HubSpot to Google Sheets
+
+on:
+  schedule:
+    # Every day at 10:37 UTC = 6:37 AM New York (EDT) / 5:37 AM (EST)
+    # = 4:07 PM India. Offset from the Sales Metrics run (10:07 UTC).
+    - cron: "37 10 * * *"
+  workflow_dispatch:   # "Run workflow" button on the Actions tab
+    inputs:
+      full_refresh:
+        description: "Full refresh: re-fetch ALL months (backfill). Leave off for a normal frozen run."
+        type: boolean
+        default: false
+
+# Never let two runs write the sheet at the same time.
+concurrency:
+  group: leads-pivots
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install requests pytz gspread google-auth
+
+      - name: Run hubspot_pivots.py
+        env:
+          HUBSPOT_ACCESS_TOKEN: ${{ secrets.HUBSPOT_ACCESS_TOKEN }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          # Set only when the manual run's "Full refresh" box is ticked;
+          # scheduled runs leave it empty, so the freeze stays on.
+          FULL_REFRESH: ${{ github.event.inputs.full_refresh == 'true' && '1' || '' }}
+          PYTHONUNBUFFERED: "1"
+        run: python hubspot_pivots.py
