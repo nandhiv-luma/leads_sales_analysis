@@ -42,4 +42,4 @@ jobs:
           # scheduled runs leave it empty, so the freeze stays on.
           FULL_REFRESH: ${{ github.event.inputs.full_refresh == 'true' && '1' || '' }}
           PYTHONUNBUFFERED: "1"
-        run: python hubspot_pivots.py
+        run: python main.py
